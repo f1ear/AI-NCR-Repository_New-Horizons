@@ -1,9 +1,11 @@
+# подключаем модули
 import pandas as pd
 from PIL import Image
 from PIL.ExifTags import TAGS
 from datetime import datetime
 import os
 
+# функция для получения даты и времени из метаданных фотографии
 def getDateTime(imageName):
     img = Image.open(f'data/{imageName}')
     exifData = img._getexif()
@@ -15,6 +17,7 @@ def getDateTime(imageName):
                 return DateTime
     return None
 
+# функция для рассчета разницы по времени между двумя датами
 def getTimeDelta(date1, date2):
     d1 = datetime.strptime(date1, '%Y-%m-%d %H:%M:%S')
     d2 = datetime.strptime(date2, '%Y-%m-%d %H:%M:%S')
@@ -22,15 +25,14 @@ def getTimeDelta(date1, date2):
     timeDelta = t.total_seconds() / 60
     return timeDelta
 
+# функция собственно регистрации
 def registration():
     output_file = 'final_data.csv'
 
-    # Создаем файл, если он не существует, и добавляем заголовки
     if not os.path.exists(output_file):
         cols = pd.DataFrame(columns=['name_folder', 'class', 'date_registration_start', 'date_registration_end', 'count'])
         cols.to_csv(output_file, index=False)
 
-    # Считываем файл, который выдал детектор с классификатором
     procf = pd.read_csv('no_reg_table.csv')
 
     folder = int(input("Enter current folder name: "))
@@ -40,7 +42,6 @@ def registration():
     reg_start = None
     reg_end = None
 
-    # Проход по каждой строке таблицы
     for i in range(procf.shape[0]):
         date = getDateTime(procf.at[i, 'image_name'])
         current_class = procf.at[i, 'class_name']
@@ -48,9 +49,8 @@ def registration():
 
         if reg:
             time_delta = getTimeDelta(prev_date, date)
-            if time_delta > 30:  # Если прошло больше 30 минут
+            if time_delta > 30: 
                 reg_end = prev_date
-                # Добавляем запись о регистрации в итоговый файл
                 reg_class = "Not enough data" if reg_class == "Empty" else reg_class
                 dataline = {'name_folder': folder, 'class': reg_class, 'date_registration_start': reg_start, 'date_registration_end': reg_end, 'max_count': max_count}
                 dataline = pd.DataFrame(dataline, index=[0])
@@ -66,7 +66,6 @@ def registration():
         max_count = max(max_count, current_count)
         prev_date = date
 
-    # Добавляем последнюю запись, если регистрация не была завершена
     if reg:
         reg_end = prev_date
         reg_class = "данных недостаточно" if reg_class == "Empty" else reg_class
